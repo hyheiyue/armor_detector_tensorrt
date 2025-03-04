@@ -1,4 +1,4 @@
-tensorrt_armor_detector:
+armor_detector_tensorrt:
   ros__parameters:
     use_sim_time: false
     debug_mode: true
@@ -9,7 +9,7 @@ tensorrt_armor_detector:
       camera_name: 'front_industrial_camera'
       subscribe_compressed: false
 
-      model_path: $(find-pkg-share tensorrt_armor_detector)/model/opt-1208-001.onnx
+      model_path: $(find-pkg-share armor_detector_tensorrt)/model/opt-1208-001.onnx
       device_type: 'AUTO'
       confidence_threshold: 0.25
       top_k: 128

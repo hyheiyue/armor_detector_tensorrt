@@ -12,8 +12,8 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
 
-#include "tensorrt_armor_detector/logging.hpp"
-#include "tensorrt_armor_detector/types.hpp"
+#include "armor_detector_tensorrt/logging.hpp"
+#include "armor_detector_tensorrt/types.hpp"
 
 namespace rm_auto_aim
 {

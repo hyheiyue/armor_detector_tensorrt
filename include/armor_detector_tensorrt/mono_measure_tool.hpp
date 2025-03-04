@@ -19,7 +19,7 @@
 #include <string>
 #include <vector>
 
-#include "tensorrt_armor_detector/types.hpp"
+#include "armor_detector_tensorrt/types.hpp"
 #include "opencv2/opencv.hpp"
 
 namespace rm_auto_aim

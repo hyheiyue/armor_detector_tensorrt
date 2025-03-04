@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef TENSORRT_ARMOR_DETECTOR__TENSORRT_DETECT_NODE_HPP_
-#define TENSORRT_ARMOR_DETECTOR__TENSORRT_DETECT_NODE_HPP_
+#ifndef armor_detector_tensorrt__TENSORRT_DETECT_NODE_HPP_
+#define armor_detector_tensorrt__TENSORRT_DETECT_NODE_HPP_
 
 #include <auto_aim_interfaces/msg/armors.hpp>
 #include <future>
@@ -24,12 +24,12 @@
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <string>
-#include <tensorrt_armor_detector/mono_measure_tool.hpp>
-// #include <tensorrt_armor_detector/tensorrt_detector.hpp>
-// #include <tensorrt_armor_detector/types.hpp>
+#include <armor_detector_tensorrt/mono_measure_tool.hpp>
+// #include <armor_detector_tensorrt/tensorrt_detector.hpp>
+// #include <armor_detector_tensorrt/types.hpp>
 #include <vector>
 #include <visualization_msgs/msg/marker_array.hpp>
-#include <tensorrt_armor_detector/TRTModule.hpp>
+#include <armor_detector_tensorrt/TRTModule.hpp>
 
 namespace rm_auto_aim
 {
@@ -84,4 +84,4 @@ private:
 
 }  // namespace rm_auto_aim
 
-#endif  // TENSORRT_ARMOR_DETECTOR__TENSORRT_DETECT_NODE_HPP_
+#endif  // armor_detector_tensorrt__TENSORRT_DETECT_NODE_HPP_

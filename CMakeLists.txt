@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(tensorrt_armor_detector)
+project(armor_detector_tensorrt)
 
 # 启用 CUDA 语言
 enable_language(CUDA)

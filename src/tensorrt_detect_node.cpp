@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "tensorrt_armor_detector/tensorrt_detect_node.hpp"
+#include "armor_detector_tensorrt/tensorrt_detect_node.hpp"
 
 #include <cv_bridge/cv_bridge.h>
 #include <fmt/format.h>
@@ -20,7 +20,7 @@
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2/LinearMath/Quaternion.h>
 
-// #include "tensorrt_armor_detector/tensorrt_detector.hpp"
+// #include "armor_detector_tensorrt/tensorrt_detector.hpp"
 
 namespace rm_auto_aim
 {
