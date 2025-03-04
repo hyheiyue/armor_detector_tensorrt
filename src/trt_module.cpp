@@ -1,7 +1,22 @@
+// Copyright 2025 Zikang Xie
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#include "armor_detector_tensorrt/trt_module.hpp"
+
 #include <fstream>
 
 #include "NvOnnxParser.h"
-#include "armor_detector_tensorrt/trt_module.hpp"
 #include "cuda_runtime_api.h"
 #include "rclcpp/logging.hpp"
 
@@ -16,7 +31,6 @@
 
 namespace rm_auto_aim
 {
-using namespace nvinfer1;
 static const int INPUT_W = 416;        // Width of input
 static const int INPUT_H = 416;        // Height of input
 static constexpr int NUM_CLASSES = 8;  // Number of classes
@@ -161,7 +175,6 @@ AdaptedTRTModule::AdaptedTRTModule(const std::string & onnx_path, const Params &
   auto output_dims = engine_->getBindingDimensions(output_idx_);
   input_sz_ = input_dims.d[1] * input_dims.d[2] * input_dims.d[3];  // 1x3x416x416
   output_sz_ = output_dims.d[1] * output_dims.d[2];                 // 1x21x3549
-  // RCLCPP_INFO(rclcpp::get_logger("postprocess.output_buff"), "output_sz: %ld, output_dims.d[1]: %d, output_dims.d[2]: %d", output_sz_, output_dims.d[1], output_dims.d[2]);
   TRT_ASSERT(cudaMalloc(&device_buffers_[input_idx_], input_sz_ * sizeof(float)) == 0);
   TRT_ASSERT(cudaMalloc(&device_buffers_[output_idx_], output_sz_ * sizeof(float)) == 0);
   output_buffer_ = new float[output_sz_];
@@ -278,7 +291,8 @@ std::vector<ArmorObject> AdaptedTRTModule::postprocess(
   std::vector<int> strides = {8, 16, 32};
   std::vector<GridAndStride> grid_strides;
   generate_grids_and_stride(strides, grid_strides);
-  // RCLCPP_INFO(rclcpp::get_logger("postprocess.num_detections"), "num_detections: %d ", num_detections);
+  // RCLCPP_INFO(
+  //   rclcpp::get_logger("postprocess.num_detections"), "num_detections: %d ", num_detections);
 
   for (int i = 0; i < num_detections; ++i) {
     const float * det = output + i * 21;
@@ -333,11 +347,6 @@ std::vector<ArmorObject> AdaptedTRTModule::postprocess(
     obj.pts[1] = cv::Point2f(apex_dst(0, 1), apex_dst(1, 1));
     obj.pts[2] = cv::Point2f(apex_dst(0, 2), apex_dst(1, 2));
     obj.pts[3] = cv::Point2f(apex_dst(0, 3), apex_dst(1, 3));
-    // RCLCPP_INFO(rclcpp::get_logger("postprocess.pos"), "obj_conf: %f, x_1: %f, y_1: %f, x_2: %f, y_2: %f, x_3: %f, y_3: %f, x_4: %f, y_4: %f",
-    // conf, obj.pts[0].x, obj.pts[0].y,
-    // obj.pts[1].x, obj.pts[1].y,
-    // obj.pts[2].x, obj.pts[2].y,
-    // obj.pts[3].x, obj.pts[3].y);
 
     auto rect = cv::boundingRect(obj.pts);
 
@@ -358,23 +367,7 @@ std::vector<ArmorObject> AdaptedTRTModule::postprocess(
     scores.push_back(conf);
     output_objs.push_back(std::move(obj));
   }
-  // RCLCPP_INFO(rclcpp::get_logger("postprocess.bboxs_size"), "Detected %d objects", bboxes.size());
-  // NMS处理
-  // 生成 cv::Rect 向量
-  // std::vector<cv::Rect> rects;
-  // for (const auto & bbox : bboxes) {
-  //   int x = bbox.pts[0].x;
-  //   int y = bbox.pts[0].y;
-  //   int width = bbox.pts[2].x - bbox.pts[0].x;
-  //   int height = bbox.pts[2].y - bbox.pts[0].y;
-  //   rects.emplace_back(x, y, width, height);
-  // }
 
-  // // 生成 scores 向量
-  // std::vector<float> scores;
-  // for (const auto & bbox : bboxes) {
-  //   scores.push_back(bbox.confidence);
-  // }
   // TopK
   std::sort(
     output_objs.begin(), output_objs.end(),

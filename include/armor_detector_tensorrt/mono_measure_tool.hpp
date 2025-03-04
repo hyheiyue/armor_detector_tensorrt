@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ARMOR_DETECTOR_OPENVINO__MONO_MEASURE_TOOL_HPP_
-#define ARMOR_DETECTOR_OPENVINO__MONO_MEASURE_TOOL_HPP_
+#ifndef ARMOR_DETECTOR_TENSORRT__MONO_MEASURE_TOOL_HPP_
+#define ARMOR_DETECTOR_TENSORRT__MONO_MEASURE_TOOL_HPP_
 
 #include <string>
 #include <vector>
@@ -96,4 +96,4 @@ private:
 
 }  // namespace rm_auto_aim
 
-#endif  // ARMOR_DETECTOR_OPENVINO__MONO_MEASURE_TOOL_HPP_
+#endif  // ARMOR_DETECTOR_TENSORRT__MONO_MEASURE_TOOL_HPP_

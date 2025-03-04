@@ -1,4 +1,4 @@
-// Copyright 2023 Yunlong Feng
+// Copyright 2025 Zikang Xie
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ARMOR_DETECTOR_OPENVINO__TYPES_HPP_
-#define ARMOR_DETECTOR_OPENVINO__TYPES_HPP_
+#ifndef ARMOR_DETECTOR_TENSORRT__TYPES_HPP_
+#define ARMOR_DETECTOR_TENSORRT__TYPES_HPP_
 
 #include <vector>
 
@@ -39,4 +39,4 @@ constexpr const char * K_ARMOR_NAMES[] = {"guard", "1", "2", "3", "4", "5", "out
 
 }  // namespace rm_auto_aim
 
-#endif  // ARMOR_DETECTOR_OPENVINO__TYPES_HPP_
+#endif  // ARMOR_DETECTOR_TENSORRT__TYPES_HPP_

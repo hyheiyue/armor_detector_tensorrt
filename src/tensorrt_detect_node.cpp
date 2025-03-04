@@ -1,4 +1,4 @@
-// Copyright 2023 Yunlong Feng
+// Copyright 2025 Zikang Xie
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,13 +14,11 @@
 
 #include "armor_detector_tensorrt/tensorrt_detect_node.hpp"
 
-#include <cv_bridge/cv_bridge.h>
-#include <fmt/format.h>
-#include <rmw/qos_profiles.h>
-#include <tf2/LinearMath/Matrix3x3.h>
-#include <tf2/LinearMath/Quaternion.h>
-
-// #include "armor_detector_tensorrt/tensorrt_detector.hpp"
+#include "cv_bridge/cv_bridge.h"
+#include "fmt/format.h"
+#include "rmw/qos_profiles.h"
+#include "tf2/LinearMath/Matrix3x3.h"
+#include "tf2/LinearMath/Quaternion.h"
 
 namespace rm_auto_aim
 {
@@ -29,7 +27,6 @@ TensorRTDetectorNode::TensorRTDetectorNode(rclcpp::NodeOptions options)
 {
   RCLCPP_INFO(this->get_logger(), "Initializing detect node");
 
-  // RCLCPP_INFO(this->get_logger(), "Initializing TensorRT");
   detector_ = nullptr;
   this->initDetector();
   RCLCPP_INFO(this->get_logger(), "Initializing TensorRT");
@@ -60,7 +57,7 @@ TensorRTDetectorNode::TensorRTDetectorNode(rclcpp::NodeOptions options)
   if (debug_mode_) {
     this->createDebugPublishers();
   }
-  // Regiter debug mode param handler
+  // Register debug mode param handler
   debug_param_sub_ = std::make_shared<rclcpp::ParameterEventHandler>(this);
   debug_cb_handle_ =
     debug_param_sub_->add_parameter_callback("debug_mode", [this](const rclcpp::Parameter & p) {
@@ -160,7 +157,7 @@ void TensorRTDetectorNode::tensorrtDetectCallback(
   const std::vector<ArmorObject> & objs, int64_t timestamp_nanosec, const cv::Mat & src_img)
 {
   if (measure_tool_ == nullptr) {
-    RCLCPP_WARN(this->get_logger(), "No camera_info recieve yet.");
+    RCLCPP_WARN(this->get_logger(), "No camera_info receive yet.");
     return;
   }
 
@@ -178,9 +175,6 @@ void TensorRTDetectorNode::tensorrtDetectCallback(
   armors_msg.header.frame_id = frame_id_;
   armors_msg.header.stamp = timestamp;
   for (auto & obj : objs) {
-    // RCLCPP_INFO(
-    //   this->get_logger(), "detect_color: %d, obj_color: %d", detect_color_, static_cast<int>(obj.color));
-
     if (detect_color_ == 0 && obj.color != ArmorColor::RED) {
       continue;
     } else if (detect_color_ == 1 && obj.color != ArmorColor::BLUE) {
@@ -217,11 +211,6 @@ void TensorRTDetectorNode::tensorrtDetectCallback(
     armor.pose.orientation.w = tf_quaternion.w();
     armor.distance_to_image_center = measure_tool_->calcDistanceToCenter(obj);
 
-    // RCLCPP_INFO(
-    //   this->get_logger(), "Armor detected: number=%s, position=(%.2f, %.2f, %.2f), orientation=(%.2f, %.2f, %.2f, %.2f), distance_to_image_center=%.2f",
-    //   armor.number.c_str(), armor.pose.position.x, armor.pose.position.y, armor.pose.position.z,
-    //   armor.pose.orientation.x, armor.pose.orientation.y, armor.pose.orientation.z, armor.pose.orientation.w,
-    //   armor.distance_to_image_center);
     armors_msg.armors.push_back(std::move(armor));
 
     if (debug_mode_) {
@@ -250,7 +239,7 @@ void TensorRTDetectorNode::tensorrtDetectCallback(
           armor_color = "P";
           break;
         default:
-          armor_color = "UNKOWN";
+          armor_color = "UNKNOWN";
           break;
       }
 
@@ -294,8 +283,4 @@ void TensorRTDetectorNode::destroyDebugPublishers() { debug_img_pub_.shutdown();
 }  // namespace rm_auto_aim
 
 #include "rclcpp_components/register_node_macro.hpp"
-
-// Register the component with class_loader.
-// This acts as a sort of entry point, allowing the component to be discoverable
-// when its library is being loaded into a running process.
 RCLCPP_COMPONENTS_REGISTER_NODE(rm_auto_aim::TensorRTDetectorNode)

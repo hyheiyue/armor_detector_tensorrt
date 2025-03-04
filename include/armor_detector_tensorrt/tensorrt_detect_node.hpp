@@ -1,4 +1,4 @@
-// Copyright 2023 Yunlong Feng
+// Copyright 2025 Zikang Xie
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef armor_detector_tensorrt__TENSORRT_DETECT_NODE_HPP_
-#define armor_detector_tensorrt__TENSORRT_DETECT_NODE_HPP_
+#ifndef ARMOR_DETECTOR_TENSORRT__TENSORRT_DETECT_NODE_HPP_
+#define ARMOR_DETECTOR_TENSORRT__TENSORRT_DETECT_NODE_HPP_
 
 #include <future>
 #include <memory>
@@ -36,7 +36,7 @@ namespace rm_auto_aim
 class TensorRTDetectorNode : public rclcpp::Node
 {
 public:
-  TensorRTDetectorNode(rclcpp::NodeOptions options);
+  explicit TensorRTDetectorNode(rclcpp::NodeOptions options);
 
 private:
   void initDetector();
@@ -83,4 +83,4 @@ private:
 
 }  // namespace rm_auto_aim
 
-#endif  // armor_detector_tensorrt__TENSORRT_DETECT_NODE_HPP_
+#endif  // ARMOR_DETECTOR_TENSORRT__TENSORRT_DETECT_NODE_HPP_
