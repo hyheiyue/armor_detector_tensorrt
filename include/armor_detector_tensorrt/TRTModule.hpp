@@ -1,24 +1,22 @@
 #ifndef TRT_MODULE_HPP
 #define TRT_MODULE_HPP
 
-#include <NvInfer.h>
-#include <NvInferRuntime.h>
-#include <fmt/color.h>
-#include <fmt/core.h>
-#include <fmt/printf.h>
-#include <eigen3/Eigen/Dense>
-
 #include <memory>
-#include <opencv2/opencv.hpp>
 #include <vector>
 
+#include "NvInfer.h"
+#include "NvInferRuntime.h"
 #include "armor_detector_tensorrt/logging.hpp"
 #include "armor_detector_tensorrt/types.hpp"
+#include "eigen3/Eigen/Dense"
+#include "fmt/color.h"
+#include "fmt/core.h"
+#include "fmt/printf.h"
+#include "opencv2/opencv.hpp"
 
 namespace rm_auto_aim
 {
 // 定义检测框结构体，与 OpenVINO 模型输出对齐
-
 class AdaptedTRTModule
 {
 public:
@@ -45,10 +43,13 @@ public:
 
 private:
   // TensorRT 引擎初始化
-  void build_engine(const std::string & onnx_path);
+  void buildEngine(const std::string & onnx_path);
 
   // 后处理：解析输出张量，生成检测框
-  std::vector<ArmorObject> postprocess(std::vector<ArmorObject> & output_objs, std::vector<float> & scores, std::vector<cv::Rect> & rects, const float * output, int num_detections, const Eigen::Matrix<float, 3, 3> & transform_matrix);
+  std::vector<ArmorObject> postprocess(
+    std::vector<ArmorObject> & output_objs, std::vector<float> & scores,
+    std::vector<cv::Rect> & rects, const float * output, int num_detections,
+    const Eigen::Matrix<float, 3, 3> & transform_matrix);
 
   // 成员变量
   Params params_;
@@ -57,10 +58,10 @@ private:
   void * device_buffers_[2];  // 输入输出显存指针
   float * output_buffer_;     // 输出数据主机内存
   cudaStream_t stream_;       // CUDA流
-  TRTLogger gLogger;
   int input_idx_, output_idx_;
   size_t input_sz_, output_sz_;
   // Eigen::Matrix3f transform_matrix; // 变换矩阵
+  TRTLogger g_logger_;
 };
 }  // namespace rm_auto_aim
 

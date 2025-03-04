@@ -1,10 +1,10 @@
 #include "armor_detector_tensorrt/TRTModule.hpp"
 
-#include <NvOnnxParser.h>
-#include <cuda_runtime_api.h>
-#include <rclcpp/logging.hpp>
-
 #include <fstream>
+
+#include "NvOnnxParser.h"
+#include "cuda_runtime_api.h"
+#include "rclcpp/logging.hpp"
 
 // #include <logger.h>
 #define TRT_ASSERT(expr)                                                \
@@ -49,7 +49,6 @@ static cv::Mat letterbox(
   std::vector<int> new_shape = {INPUT_W, INPUT_H})
 {
   // Get current image shape [height, width]
-
   int img_h = img.rows;
   int img_w = img.cols;
 
@@ -122,12 +121,12 @@ static void nms_merge_sorted_bboxes(
     ArmorObject & a = faceobjects[i];
 
     int keep = 1;
-    for (size_t j = 0; j < indices.size(); j++) {
-      ArmorObject & b = faceobjects[indices[j]];
+    for (int indice : indices) {
+      ArmorObject & b = faceobjects[indice];
 
       // intersection over union
       float inter_area = intersection_area(a, b);
-      float union_area = areas[i] + areas[indices[j]] - inter_area;
+      float union_area = areas[i] + areas[indice] - inter_area;
       float iou = inter_area / union_area;
       if (iou > nms_threshold || isnan(iou)) {
         keep = 0;
@@ -153,7 +152,7 @@ static void nms_merge_sorted_bboxes(
 AdaptedTRTModule::AdaptedTRTModule(const std::string & onnx_path, const Params & params)
 : params_(params), engine_(nullptr), context_(nullptr), output_buffer_(nullptr)
 {
-  build_engine(onnx_path);
+  buildEngine(onnx_path);
   TRT_ASSERT(context_ = engine_->createExecutionContext());
   TRT_ASSERT((input_idx_ = engine_->getBindingIndex("images")) == 0);
   TRT_ASSERT((output_idx_ = engine_->getBindingIndex("output")) == 1);
@@ -182,11 +181,11 @@ AdaptedTRTModule::~AdaptedTRTModule()
 }
 
 // 构建 TensorRT 引擎
-void AdaptedTRTModule::build_engine(const std::string & onnx_path)
+void AdaptedTRTModule::buildEngine(const std::string & onnx_path)
 {
   // 生成引擎文件路径（与ONNX同目录，后缀改为.engine）
   std::string engine_path = onnx_path.substr(0, onnx_path.find_last_of('.')) + ".engine";
-  
+
   // 尝试加载缓存的引擎文件
   std::ifstream engine_file(engine_path, std::ios::binary);
   if (engine_file.good()) {
@@ -197,10 +196,10 @@ void AdaptedTRTModule::build_engine(const std::string & onnx_path)
     engine_file.read(engine_data.data(), size);
     engine_file.close();
 
-    auto runtime = nvinfer1::createInferRuntime(gLogger);
+    auto runtime = nvinfer1::createInferRuntime(g_logger_);
     engine_ = runtime->deserializeCudaEngine(engine_data.data(), size);
     runtime->destroy();
-    
+
     if (engine_ != nullptr) {
       RCLCPP_INFO(rclcpp::get_logger("TRTModule"), "Loaded cached engine: %s", engine_path.c_str());
       return;
@@ -208,10 +207,11 @@ void AdaptedTRTModule::build_engine(const std::string & onnx_path)
   }
 
   // 构建新引擎
-  auto builder = nvinfer1::createInferBuilder(gLogger);
-  const auto explicit_batch = 1U << static_cast<uint32_t>(nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
+  auto builder = nvinfer1::createInferBuilder(g_logger_);
+  const auto explicit_batch =
+    1U << static_cast<uint32_t>(nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
   auto network = builder->createNetworkV2(explicit_batch);
-  auto parser = nvonnxparser::createParser(*network, gLogger);
+  auto parser = nvonnxparser::createParser(*network, g_logger_);
   parser->parseFromFile(onnx_path.c_str(), static_cast<int>(nvinfer1::ILogger::Severity::kINFO));
 
   auto config = builder->createBuilderConfig();
@@ -223,7 +223,8 @@ void AdaptedTRTModule::build_engine(const std::string & onnx_path)
   // 保存引擎到文件
   auto serialized_engine = engine_->serialize();
   std::ofstream out_file(engine_path, std::ios::binary);
-  out_file.write(reinterpret_cast<const char*>(serialized_engine->data()), serialized_engine->size());
+  out_file.write(
+    reinterpret_cast<const char *>(serialized_engine->data()), serialized_engine->size());
   out_file.close();
   serialized_engine->destroy();
 
@@ -264,18 +265,20 @@ std::vector<ArmorObject> AdaptedTRTModule::detect(const cv::Mat & image)
   std::vector<cv::Rect> rects;
   std::vector<float> scores;
   // 后处理
-  return postprocess(objs_tmp, scores, rects, output_buffer_, output_sz_ / 21, transform_matrix);  // 3549个检测框
+  return postprocess(
+    objs_tmp, scores, rects, output_buffer_, output_sz_ / 21, transform_matrix);  // 3549个检测框
 }
 
 // 后处理函数
-std::vector<ArmorObject> AdaptedTRTModule::postprocess(std::vector<ArmorObject> & output_objs, std::vector<float> & scores, std::vector<cv::Rect> & rects, 
-const float * output, int num_detections, const Eigen::Matrix<float, 3, 3> & transform_matrix)
+std::vector<ArmorObject> AdaptedTRTModule::postprocess(
+  std::vector<ArmorObject> & output_objs, std::vector<float> & scores,
+  std::vector<cv::Rect> & rects, const float * output, int num_detections,
+  const Eigen::Matrix<float, 3, 3> & transform_matrix)
 {
   std::vector<int> strides = {8, 16, 32};
   std::vector<GridAndStride> grid_strides;
   generate_grids_and_stride(strides, grid_strides);
   // RCLCPP_INFO(rclcpp::get_logger("postprocess.num_detections"), "num_detections: %d ", num_detections);
-
 
   for (int i = 0; i < num_detections; ++i) {
     const float * det = output + i * 21;
@@ -318,9 +321,7 @@ const float * output, int num_detections, const Eigen::Matrix<float, 3, 3> & tra
     Eigen::Matrix<float, 3, 4> apex_norm;
     Eigen::Matrix<float, 3, 4> apex_dst;
 
-    apex_norm << x_1, x_2, x_3, x_4,
-                y_1, y_2, y_3, y_4,
-                1,   1,   1,   1;
+    apex_norm << x_1, x_2, x_3, x_4, y_1, y_2, y_3, y_4, 1, 1, 1, 1;
 
     apex_dst = transform_matrix * apex_norm;
 
@@ -333,9 +334,9 @@ const float * output, int num_detections, const Eigen::Matrix<float, 3, 3> & tra
     obj.pts[2] = cv::Point2f(apex_dst(0, 2), apex_dst(1, 2));
     obj.pts[3] = cv::Point2f(apex_dst(0, 3), apex_dst(1, 3));
     // RCLCPP_INFO(rclcpp::get_logger("postprocess.pos"), "obj_conf: %f, x_1: %f, y_1: %f, x_2: %f, y_2: %f, x_3: %f, y_3: %f, x_4: %f, y_4: %f",
-    // conf, obj.pts[0].x, obj.pts[0].y, 
-    // obj.pts[1].x, obj.pts[1].y, 
-    // obj.pts[2].x, obj.pts[2].y, 
+    // conf, obj.pts[0].x, obj.pts[0].y,
+    // obj.pts[1].x, obj.pts[1].y,
+    // obj.pts[2].x, obj.pts[2].y,
     // obj.pts[3].x, obj.pts[3].y);
 
     auto rect = cv::boundingRect(obj.pts);
@@ -346,8 +347,11 @@ const float * output, int num_detections, const Eigen::Matrix<float, 3, 3> & tra
     obj.prob = conf;
 
     // 解析颜色和类别
-    obj.color = static_cast<ArmorColor>(std::max_element(det + 9, det + 13) - (det + 9));
-    obj.number = static_cast<ArmorNumber>(std::max_element(det + 13, det + 21) - (det + 13));
+    obj.color =
+      static_cast<ArmorColor>(std::max_element(det + 9, det + 9 + NUM_COLORS) - (det + 9));
+    obj.number = static_cast<ArmorNumber>(
+      std::max_element(det + 9 + NUM_COLORS, det + 9 + NUM_COLORS + NUM_CLASSES) -
+      (det + 9 + NUM_COLORS));
     // box.confidence = conf;
 
     rects.push_back(rect);
@@ -371,10 +375,10 @@ const float * output, int num_detections, const Eigen::Matrix<float, 3, 3> & tra
   // for (const auto & bbox : bboxes) {
   //   scores.push_back(bbox.confidence);
   // }
- // TopK
-  std::sort(output_objs.begin(), output_objs.end(), [](const ArmorObject & a, const ArmorObject & b) {
-    return a.prob > b.prob;
-  });
+  // TopK
+  std::sort(
+    output_objs.begin(), output_objs.end(),
+    [](const ArmorObject & a, const ArmorObject & b) { return a.prob > b.prob; });
   if (output_objs.size() > static_cast<size_t>(params_.top_k)) {
     output_objs.resize(params_.top_k);
   }

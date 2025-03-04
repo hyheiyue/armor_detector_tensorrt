@@ -15,21 +15,20 @@
 #ifndef armor_detector_tensorrt__TENSORRT_DETECT_NODE_HPP_
 #define armor_detector_tensorrt__TENSORRT_DETECT_NODE_HPP_
 
-#include <auto_aim_interfaces/msg/armors.hpp>
 #include <future>
-#include <image_transport/image_transport.hpp>
 #include <memory>
 #include <queue>
-#include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/camera_info.hpp>
-#include <sensor_msgs/msg/image.hpp>
 #include <string>
-#include <armor_detector_tensorrt/mono_measure_tool.hpp>
-// #include <armor_detector_tensorrt/tensorrt_detector.hpp>
-// #include <armor_detector_tensorrt/types.hpp>
 #include <vector>
-#include <visualization_msgs/msg/marker_array.hpp>
-#include <armor_detector_tensorrt/TRTModule.hpp>
+
+#include "armor_detector_tensorrt/TRTModule.hpp"
+#include "armor_detector_tensorrt/mono_measure_tool.hpp"
+#include "auto_aim_interfaces/msg/armors.hpp"
+#include "image_transport/image_transport.hpp"
+#include "rclcpp/rclcpp.hpp"
+#include "sensor_msgs/msg/camera_info.hpp"
+#include "sensor_msgs/msg/image.hpp"
+#include "visualization_msgs/msg/marker_array.hpp"
 
 namespace rm_auto_aim
 {

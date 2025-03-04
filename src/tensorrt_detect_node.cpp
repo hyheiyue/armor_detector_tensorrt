@@ -122,7 +122,7 @@ TensorRTDetectorNode::TensorRTDetectorNode(rclcpp::NodeOptions options)
 void TensorRTDetectorNode::initDetector()
 {
   auto model_path = this->declare_parameter("detector.model_path", "");
-  
+
   AdaptedTRTModule::Params params;
   params.input_w = this->declare_parameter("detector.input_width", 416);
   params.input_h = this->declare_parameter("detector.input_height", 416);
@@ -145,14 +145,15 @@ void TensorRTDetectorNode::imgCallback(const sensor_msgs::msg::Image::ConstShare
 {
   auto cv_img = cv_bridge::toCvCopy(msg, "rgb8");
   frame_id_ = msg->header.frame_id;
-  
+
   // 直接调用 detect() 进行推理
   const auto objs = detector_->detect(cv_img->image);
-  
+
   // RCLCPP_INFO(this->get_logger(), "Detected %d armors", bboxes.size());
-  
+
   // 调用处理函数
-  tensorrtDetectCallback(objs, msg->header.stamp.sec * 1e9 + msg->header.stamp.nanosec, cv_img->image);
+  tensorrtDetectCallback(
+    objs, msg->header.stamp.sec * 1e9 + msg->header.stamp.nanosec, cv_img->image);
 }
 
 void TensorRTDetectorNode::tensorrtDetectCallback(

@@ -14,12 +14,11 @@
 
 #include <gtest/gtest.h>
 
-#include <memory>
-#include <thread>
-#include <chrono>
-
-#include <rclcpp/rclcpp.hpp>
 #include <ament_index_cpp/get_package_share_directory.hpp>
+#include <chrono>
+#include <memory>
+#include <rclcpp/rclcpp.hpp>
+#include <thread>
 
 #include "armor_detector_tensorrt/tensorrt_detect_node.hpp"
 
@@ -31,11 +30,10 @@ TEST(ArmorDetecterNode, NodeStartupTest)
 
   auto node_options = rclcpp::NodeOptions();
   node_options.append_parameter_override(
-    "detector.model_path",
-    "package://armor_detector_tensorrt/model/opt-1208-001.onnx");
+    "detector.model_path", "package://armor_detector_tensorrt/model/opt-1208-001.onnx");
   auto node = std::make_shared<rm_auto_aim::TensorRTDetectorNode>(node_options);
 
-  auto spin_thread = std::thread([&]() {rclcpp::spin(node);});
+  auto spin_thread = std::thread([&]() { rclcpp::spin(node); });
   std::this_thread::sleep_for(1000ms);
   rclcpp::shutdown();
   spin_thread.join();
