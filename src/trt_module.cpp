@@ -1,8 +1,7 @@
-#include "armor_detector_tensorrt/TRTModule.hpp"
-
 #include <fstream>
 
 #include "NvOnnxParser.h"
+#include "armor_detector_tensorrt/trt_module.hpp"
 #include "cuda_runtime_api.h"
 #include "rclcpp/logging.hpp"
 
@@ -201,7 +200,8 @@ void AdaptedTRTModule::buildEngine(const std::string & onnx_path)
     runtime->destroy();
 
     if (engine_ != nullptr) {
-      RCLCPP_INFO(rclcpp::get_logger("TRTModule"), "Loaded cached engine: %s", engine_path.c_str());
+      RCLCPP_INFO(
+        rclcpp::get_logger("trt_module"), "Loaded cached engine: %s", engine_path.c_str());
       return;
     }
   }
@@ -234,7 +234,7 @@ void AdaptedTRTModule::buildEngine(const std::string & onnx_path)
   config->destroy();
   builder->destroy();
 
-  RCLCPP_INFO(rclcpp::get_logger("TRTModule"), "Saved new engine to: %s", engine_path.c_str());
+  RCLCPP_INFO(rclcpp::get_logger("trt_module"), "Saved new engine to: %s", engine_path.c_str());
 }
 
 // 推理函数

@@ -21,8 +21,8 @@
 #include <string>
 #include <vector>
 
-#include "armor_detector_tensorrt/TRTModule.hpp"
 #include "armor_detector_tensorrt/mono_measure_tool.hpp"
+#include "armor_detector_tensorrt/trt_module.hpp"
 #include "auto_aim_interfaces/msg/armors.hpp"
 #include "image_transport/image_transport.hpp"
 #include "rclcpp/rclcpp.hpp"

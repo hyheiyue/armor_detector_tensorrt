@@ -93,7 +93,7 @@ add_compile_options(-Wno-deprecated-declarations)  # 忽略所有弃用警告
 add_library(${PROJECT_NAME} SHARED
   src/mono_measure_tool.cpp
   src/tensorrt_detect_node.cpp
-  src/TRTModule.cpp
+  src/trt_module.cpp
 )
 
 # 设置 CUDA 源文件的编译选项
