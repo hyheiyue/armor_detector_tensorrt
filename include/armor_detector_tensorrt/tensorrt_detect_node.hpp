@@ -33,10 +33,10 @@
 namespace rm_auto_aim
 {
 
-class TensorRTDetectorNode : public rclcpp::Node
+class ArmorDetectorTensorrtNode : public rclcpp::Node
 {
 public:
-  explicit TensorRTDetectorNode(rclcpp::NodeOptions options);
+  explicit ArmorDetectorTensorrtNode(rclcpp::NodeOptions options);
 
 private:
   void initDetector();

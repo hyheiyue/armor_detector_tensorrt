@@ -22,7 +22,7 @@
 
 namespace rm_auto_aim
 {
-TensorRTDetectorNode::TensorRTDetectorNode(rclcpp::NodeOptions options)
+ArmorDetectorTensorrtNode::ArmorDetectorTensorrtNode(rclcpp::NodeOptions options)
 : Node("tensorrt_detect_node", options.use_intra_process_comms(true))
 {
   RCLCPP_INFO(this->get_logger(), "Initializing detect node");
@@ -109,14 +109,14 @@ TensorRTDetectorNode::TensorRTDetectorNode(rclcpp::NodeOptions options)
 
   img_sub_ = std::make_shared<image_transport::Subscriber>(image_transport::create_subscription(
     this, camera_name_ + "/image",
-    std::bind(&TensorRTDetectorNode::imgCallback, this, std::placeholders::_1), transport_type_,
+    std::bind(&ArmorDetectorTensorrtNode::imgCallback, this, std::placeholders::_1), transport_type_,
     use_sensor_data_qos ? rmw_qos_profile_sensor_data : rmw_qos_profile_default));
   RCLCPP_INFO(this->get_logger(), "Subscribing to %s", img_sub_->getTopic().c_str());
 
   RCLCPP_INFO(this->get_logger(), "Initializing finished.");
 }
 
-void TensorRTDetectorNode::initDetector()
+void ArmorDetectorTensorrtNode::initDetector()
 {
   auto model_path = this->declare_parameter("detector.model_path", "");
 
@@ -138,7 +138,7 @@ void TensorRTDetectorNode::initDetector()
   detector_ = std::make_unique<AdaptedTRTModule>(model_path, params);
 }
 
-void TensorRTDetectorNode::imgCallback(const sensor_msgs::msg::Image::ConstSharedPtr & msg)
+void ArmorDetectorTensorrtNode::imgCallback(const sensor_msgs::msg::Image::ConstSharedPtr & msg)
 {
   auto cv_img = cv_bridge::toCvCopy(msg, "rgb8");
   frame_id_ = msg->header.frame_id;
@@ -153,7 +153,7 @@ void TensorRTDetectorNode::imgCallback(const sensor_msgs::msg::Image::ConstShare
     objs, msg->header.stamp.sec * 1e9 + msg->header.stamp.nanosec, cv_img->image);
 }
 
-void TensorRTDetectorNode::tensorrtDetectCallback(
+void ArmorDetectorTensorrtNode::tensorrtDetectCallback(
   const std::vector<ArmorObject> & objs, int64_t timestamp_nanosec, const cv::Mat & src_img)
 {
   if (measure_tool_ == nullptr) {
@@ -273,14 +273,14 @@ void TensorRTDetectorNode::tensorrtDetectCallback(
   }
 }
 
-void TensorRTDetectorNode::createDebugPublishers()
+void ArmorDetectorTensorrtNode::createDebugPublishers()
 {
   debug_img_pub_ = image_transport::create_publisher(this, "detector/debug_img");
 }
 
-void TensorRTDetectorNode::destroyDebugPublishers() { debug_img_pub_.shutdown(); }
+void ArmorDetectorTensorrtNode::destroyDebugPublishers() { debug_img_pub_.shutdown(); }
 
 }  // namespace rm_auto_aim
 
 #include "rclcpp_components/register_node_macro.hpp"
-RCLCPP_COMPONENTS_REGISTER_NODE(rm_auto_aim::TensorRTDetectorNode)
+RCLCPP_COMPONENTS_REGISTER_NODE(rm_auto_aim::ArmorDetectorTensorrtNode)

@@ -1,147 +1,92 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.20)
 project(armor_detector_tensorrt)
 
-# 启用 CUDA 语言
-enable_language(CUDA)
-
-# 设置 CUDA 架构
-set(CMAKE_CUDA_ARCHITECTURES 86)
-
-# 设置 CUDA 编译选项
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -arch=sm_86")
-
-# 默认 C++17
-if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 17)
-endif()
+## Use C++17
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
-endif()
+## By adding -Wall and -Werror, the compiler does not ignore warnings anymore,
+## enforcing cleaner code.
+# add_definitions(-Wall -Werror)
 
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+## Suppress warnings for deprecated declarations
+add_compile_options(-Wno-deprecated-declarations)
 
-add_definitions(-DROOT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/\")
+## Export compile commands for clangd
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# 设置 CMAKE_MODULE_PATH
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+enable_language(CUDA)
 
-# ROS 依赖
-find_package(ament_cmake REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(rclcpp_components REQUIRED)
-find_package(geometry_msgs REQUIRED)
-find_package(visualization_msgs REQUIRED)
-find_package(cv_bridge REQUIRED)
-find_package(image_transport REQUIRED)
-find_package(image_transport_plugins REQUIRED)
-find_package(tf2 REQUIRED)
-find_package(auto_aim_interfaces REQUIRED)
-find_package(rmoss_interfaces REQUIRED)
-find_package(rmoss_util REQUIRED)
+set(CMAKE_CUDA_ARCHITECTURES 50 52 60 61 70 72 75 80 86 87 89 90 100 101 120)
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Wno-deprecated-gpu-targets")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --extended-lambda")
 
-set(ros_dependencies
-  rclcpp
-  rclcpp_components
-  geometry_msgs
-  visualization_msgs
-  cv_bridge
-  image_transport
-  image_transport_plugins
-  tf2
-  auto_aim_interfaces
-  rmoss_util
-  rmoss_interfaces
+#######################
+## Find dependencies ##
+#######################
+
+find_package(ament_cmake_auto REQUIRED)
+find_package(OpenCV REQUIRED)
+find_package(CUDAToolkit REQUIRED)
+ament_auto_find_build_dependencies()
+
+list(APPEND PLUGINS nvinfer)
+list(APPEND PLUGINS nvparsers)
+list(APPEND PLUGINS nvonnxparser)
+list(APPEND PLUGINS nvinfer_plugin)
+
+foreach(libName ${PLUGINS})
+  find_library(${libName}_lib NAMES ${libName} "/usr" PATH_SUFFIXES lib)
+  list(APPEND PLUGIN_LIBS "${${libName}_lib}")
+endforeach()
+
+include_directories(${CUDA_INCLUDE_DIRS})
+
+###########
+## Build ##
+###########
+
+ament_auto_add_library(${PROJECT_NAME} SHARED
+  DIRECTORY src
 )
 
-# set(CUDNN_INCLUDE_DIR=/usr/local/cuda-11.7/include)
-# set(CUDNN_LIBRARY=/usr/local/cuda-11.7/lib)
-
-# 第三方依赖
-find_package(Eigen3 REQUIRED)
-find_package(OpenCV REQUIRED core imgproc video dnn)
-find_package(OpenVINO REQUIRED COMPONENTS Runtime ONNX)
-find_package(fmt REQUIRED)
-find_package(CUDA REQUIRED)
-# find_package(cudart REQUIRED)
-
-# 包含路径
-include_directories(${CUDA_INCLUDE_DIRS} /usr/include/x86_64-linux-gnu)
-include_directories(${CUDA_INCLUDE_DIRS} /usr/local/cuda-11.8/targets/x86_64-linux)
-link_directories(${CUDA_LIBRARY_DIRS} /usr/local/cuda-11.8/targets/x86_64-linux)
-include_directories(${TENSORRT_INCLUDE_DIRS} /home/jacket/packages/TensorRT-8.5.3.1/include)
-link_directories(${TENSORRT_LIBRARY_DIRS} /home/jacket/packages/TensorRT-8.5.3.1/lib)
-# include_directories(${CUDNN_INCLUDE_DIRS})
-# link_directories(${CUDNN_LIBRARY_DIRS} /usr/local/cuda-11.8/lib)
-
-
-include_directories(${CMAKE_SOURCE_DIR}/TRTInferSample/include)
-
-set(other_dependencies
-  Eigen3::Eigen
-  ${OpenCV_LIBS}
-  openvino::frontend::onnx
-  openvino::runtime
-  fmt::fmt
-)
-add_compile_options(-Wno-deprecated-declarations)  # 忽略所有弃用警告
-# 构建库
-add_library(${PROJECT_NAME} SHARED
-  src/mono_measure_tool.cpp
-  src/tensorrt_detect_node.cpp
-  src/trt_module.cpp
-)
-
-# 设置 CUDA 源文件的编译选项
-# set_source_files_properties(src/CUDA/preprocess.cu PROPERTIES LANGUAGE CUDA)
-
-target_include_directories(${PROJECT_NAME} PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-  ${OpenCV_INCLUDE_DIRS}
-  ${CUDA_INCLUDE_DIRS}
-  ${TENSORRT_INCLUDE_DIRS}
-  # ${CUDNN_INCLUDE_DIRS}
-)
-
-target_link_libraries(${PROJECT_NAME}
-  ${other_dependencies}
-  nvinfer nvinfer_plugin nvonnxparser
+target_link_libraries(${PROJECT_NAME} 
+  ${PLUGINS}
   ${CUDA_LIBRARIES}
   ${TENSORRT_LIBRARY_DIRS}
-  # ${CUDNN_LIBRARIES}
-  # cudart
+  ${OpenCV_LIBS}
 )
-ament_target_dependencies(${PROJECT_NAME} ${ros_dependencies})
 
 rclcpp_components_register_node(${PROJECT_NAME}
-  PLUGIN "rm_auto_aim::TensorRTDetectorNode"
+  PLUGIN "rm_auto_aim::ArmorDetectorTensorrtNode"
   EXECUTABLE ${PROJECT_NAME}_node
 )
 
-# 安装
-install(DIRECTORY include/
-  DESTINATION include
+#############
+## Testing ##
+#############
+
+if(BUILD_TESTING)
+set(ament_cmake_clang_format_CONFIG_FILE "${CMAKE_SOURCE_DIR}/.clang-format")
+find_package(ament_lint_auto REQUIRED)
+  list(APPEND AMENT_LINT_AUTO_EXCLUDE
+    ament_cmake_uncrustify
+    ament_cmake_flake8
+  )
+  ament_lint_auto_find_test_dependencies()
+endif()
+
+#############
+## Install ##
+#############
+
+ament_auto_package(
+  INSTALL_TO_SHARE
+  launch
+  config
+  model
 )
-
-install(DIRECTORY launch config model
-  DESTINATION share/${PROJECT_NAME}
-)
-
-install(TARGETS ${PROJECT_NAME}
-  EXPORT export_${PROJECT_NAME}
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  RUNTIME DESTINATION bin
-  INCLUDES DESTINATION include
-)
-
-# 导出
-ament_export_targets(export_${PROJECT_NAME})
-ament_export_dependencies(${ros_dependencies})
-
-ament_package()
