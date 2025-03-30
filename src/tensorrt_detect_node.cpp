@@ -20,6 +20,10 @@
 #include "tf2/LinearMath/Matrix3x3.h"
 #include "tf2/LinearMath/Quaternion.h"
 
+
+#include <rclcpp/rclcpp.hpp>
+#include <rcl_interfaces/msg/set_parameters_result.hpp>
+
 namespace rm_auto_aim
 {
 ArmorDetectorTensorrtNode::ArmorDetectorTensorrtNode(rclcpp::NodeOptions options)
@@ -41,7 +45,7 @@ ArmorDetectorTensorrtNode::ArmorDetectorTensorrtNode(rclcpp::NodeOptions options
   param_desc.integer_range[0].to_value = 1;
   detect_color_ = this->declare_parameter("detect_color", 0, param_desc);
 
-  auto use_sensor_data_qos = this->declare_parameter("use_sensor_data_qos", false);
+  auto use_sensor_data_qos = this->declare_parameter("use_sensor_data_qos", true);
 
   camera_name_ = this->declare_parameter("detector.camera_name", "camera");
   detect_color_ = this->declare_parameter("target_color", 0);
@@ -56,15 +60,29 @@ ArmorDetectorTensorrtNode::ArmorDetectorTensorrtNode(rclcpp::NodeOptions options
   debug_mode_ = this->declare_parameter("debug_mode", true);
   if (debug_mode_) {
     this->createDebugPublishers();
+ 
   }
   // Register debug mode param handler
-  debug_param_sub_ = std::make_shared<rclcpp::ParameterEventHandler>(this);
-  debug_cb_handle_ =
-    debug_param_sub_->add_parameter_callback("debug_mode", [this](const rclcpp::Parameter & p) {
-      this->debug_mode_ = p.as_bool();
-      this->debug_mode_ ? this->createDebugPublishers() : this->destroyDebugPublishers();
-    });
+  // debug_param_sub_ = std::make_shared<rclcpp::ParameterEventHandler>(this);
+  // debug_cb_handle_ =
+  //   debug_param_sub_->add_parameter_callback("debug_mode", [this](const rclcpp::Parameter & p) {
+  //     this->debug_mode_ = p.as_bool();
+  //     this->debug_mode_ ? this->createDebugPublishers() : this->destroyDebugPublishers();
+  //   });
+  param_interface_ = this->get_node_parameters_interface();
+  debug_cb_handle_ = param_interface_->add_on_set_parameters_callback(
+    [this](const std::vector<rclcpp::Parameter> &params) -> rcl_interfaces::msg::SetParametersResult {
+        rcl_interfaces::msg::SetParametersResult result;
+        result.successful = true;
+        for (const auto &param : params) {
+            if (param.get_name() == "debug_mode") {
 
+                RCLCPP_INFO(this->get_logger(), "Debug mode changed to: %d", param.as_bool());
+            }
+        }
+        return result;
+    }
+);
   RCLCPP_INFO(this->get_logger(), "Setup ROS subs pubs");
   // Armors publisher
   armors_pub_ = this->create_publisher<auto_aim_interfaces::msg::Armors>(
@@ -87,7 +105,7 @@ ArmorDetectorTensorrtNode::ArmorDetectorTensorrtNode(rclcpp::NodeOptions options
   text_marker_.color.b = 1.0;
   marker_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("detector/marker", 10);
 
-  // Camera handler
+  //Camera handler
   cam_info_sub_ = this->create_subscription<sensor_msgs::msg::CameraInfo>(
     camera_name_ + "/camera_info", use_sensor_data_qos ? rclcpp::SensorDataQoS() : rclcpp::QoS(1),
     [this](sensor_msgs::msg::CameraInfo::ConstSharedPtr camera_info) {
@@ -107,10 +125,14 @@ ArmorDetectorTensorrtNode::ArmorDetectorTensorrtNode(rclcpp::NodeOptions options
       this->cam_info_sub_.reset();
     });
 
+
   img_sub_ = std::make_shared<image_transport::Subscriber>(image_transport::create_subscription(
     this, camera_name_ + "/image",
     std::bind(&ArmorDetectorTensorrtNode::imgCallback, this, std::placeholders::_1), transport_type_,
     use_sensor_data_qos ? rmw_qos_profile_sensor_data : rmw_qos_profile_default));
+
+
+
   RCLCPP_INFO(this->get_logger(), "Subscribing to %s", img_sub_->getTopic().c_str());
 
   RCLCPP_INFO(this->get_logger(), "Initializing finished.");
@@ -119,7 +141,7 @@ ArmorDetectorTensorrtNode::ArmorDetectorTensorrtNode(rclcpp::NodeOptions options
 void ArmorDetectorTensorrtNode::initDetector()
 {
   auto model_path = this->declare_parameter("detector.model_path", "");
-
+  
   AdaptedTRTModule::Params params;
   params.input_w = this->declare_parameter("detector.input_width", 416);
   params.input_h = this->declare_parameter("detector.input_height", 416);
@@ -138,11 +160,11 @@ void ArmorDetectorTensorrtNode::initDetector()
   detector_ = std::make_unique<AdaptedTRTModule>(model_path, params);
 }
 
-void ArmorDetectorTensorrtNode::imgCallback(const sensor_msgs::msg::Image::ConstSharedPtr & msg)
+void ArmorDetectorTensorrtNode::imgCallback(const sensor_msgs::msg::Image::ConstSharedPtr  msg)
 {
   auto cv_img = cv_bridge::toCvCopy(msg, "rgb8");
   frame_id_ = msg->header.frame_id;
-
+  RCLCPP_INFO(this->get_logger(), "Detected");
   // 直接调用 detect() 进行推理
   const auto objs = detector_->detect(cv_img->image);
 
@@ -269,13 +291,16 @@ void ArmorDetectorTensorrtNode::tensorrtDetectCallback(
       debug_img, latency, cv::Point2i(10, 30), cv::FONT_HERSHEY_SIMPLEX, 0.8,
       cv::Scalar(0, 255, 255), 2);
 
+
     debug_img_pub_.publish(cv_bridge::CvImage(armors_msg.header, "rgb8", debug_img).toImageMsg());
   }
+
 }
 
 void ArmorDetectorTensorrtNode::createDebugPublishers()
 {
   debug_img_pub_ = image_transport::create_publisher(this, "detector/debug_img");
+
 }
 
 void ArmorDetectorTensorrtNode::destroyDebugPublishers() { debug_img_pub_.shutdown(); }
