@@ -76,8 +76,11 @@ private:
 
   // Debug publishers
   bool debug_mode_{false};
-  std::shared_ptr<rclcpp::ParameterEventHandler> debug_param_sub_;
-  std::shared_ptr<rclcpp::ParameterCallbackHandle> debug_cb_handle_;
+  // std::shared_ptr debug_param_sub_;
+  // std::shared_ptr debug_cb_handle_;
+  rclcpp::node_interfaces::NodeParametersInterface::SharedPtr param_interface_;
+  //rclcpp::OnSetParametersCallbackHandle::SharedPtr debug_cb_handle_;
+  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr debug_cb_handle_;
   image_transport::Publisher debug_img_pub_;
 };
 
