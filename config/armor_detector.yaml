@@ -7,7 +7,7 @@ armor_detector_tensorrt:
     detector:
       camera_name: 'front_industrial_camera'
       subscribe_compressed: false
-      model_path: $(find-pkg-share armor_detector_tensorrt)/model/opt-1208-001.onnx
+      model_path: /model/opt-1208-001.onnx  #貌似需要使用绝对路径
       confidence_threshold: 0.25
       top_k: 128
       nms_threshold: 0.3
