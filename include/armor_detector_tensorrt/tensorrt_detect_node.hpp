@@ -41,7 +41,7 @@ public:
 private:
   void initDetector();
 
-  void imgCallback(const sensor_msgs::msg::Image::ConstSharedPtr & msg);
+  void imgCallback(const sensor_msgs::msg::Image::ConstSharedPtr  msg);
 
   void tensorrtDetectCallback(
     const std::vector<ArmorObject> & objs, int64_t timestamp_nanosec, const cv::Mat & src_img);
