@@ -18,7 +18,7 @@ from ament_index_python.packages import get_package_share_directory
 from launch.actions import DeclareLaunchArgument
 from launch.conditions import UnlessCondition
 from launch.launch_description import LaunchDescription
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import LoadComposableNodes, Node
 from launch_ros.descriptions import ComposableNode
 
@@ -27,27 +27,41 @@ def generate_launch_description():
     bringup_dir = get_package_share_directory("armor_detector_tensorrt")
 
     namespace = LaunchConfiguration("namespace")
-    params_file = LaunchConfiguration("params_file")
+    params_file_node = LaunchConfiguration("params_file_node")
+    params_file_component = LaunchConfiguration("params_file_component")
     container_name = LaunchConfiguration("container_name")
     use_external_container = LaunchConfiguration("use_external_container")
     use_sim_time = LaunchConfiguration("use_sim_time")
-
-    params_file_path = os.path.join(bringup_dir, "config", "armor_detector.yaml")
+    model_path = LaunchConfiguration("model_path")
+    use_composition = LaunchConfiguration("use_composition")
 
     declare_use_sim_time_cmd = DeclareLaunchArgument(
         "use_sim_time",
         default_value="false",
         description="Use simulation (Gazebo) clock if true",
     )
+    declare_use_composition_cmd = DeclareLaunchArgument(
+        "use_composition",
+        default_value="true",
+        description="Use composition if True",
+    )
 
     declare_namespace_cmd = DeclareLaunchArgument(
         "namespace", default_value="", description="Namespace"
     )
 
-    declare_params_file_cmd = DeclareLaunchArgument(
-        "params_file",
-        default_value=params_file_path,
+    declare_params_file_node_cmd = DeclareLaunchArgument(
+        "params_file_node",
+        default_value=os.path.join(
+            bringup_dir, "config", "armor_detector_node.yaml"),
         description="Full path to the ROS2 parameters file to use for all launched nodes",
+    )
+
+    declare_params_file_component_cmd = DeclareLaunchArgument(
+        "params_file_component",
+        default_value=os.path.join(
+            bringup_dir, "config", "armor_detector_component.yaml"),
+        description="Full path to the ROS2 parameters file to use for all launched composablenodes",
     )
 
     declare_container_name_cmd = DeclareLaunchArgument(
@@ -62,6 +76,14 @@ def generate_launch_description():
         description="Use external container",
     )
 
+    declare_model_path_cmd = DeclareLaunchArgument(
+        "model_path",
+        default_value=os.path.join(
+            bringup_dir, "model", "opt-1208-001.onnx"
+        ),
+        description="Full path to the ROS2 parameters file to use for all launched nodes",
+    )
+
     container_node = Node(
         name=container_name,
         package="rclcpp_components",
@@ -70,50 +92,42 @@ def generate_launch_description():
         condition=UnlessCondition(use_external_container),
     )
 
-    load_detector = LoadComposableNodes(
+    load_detector_components = LoadComposableNodes(
+        condition=UnlessCondition(PythonExpression(["'", use_composition, "' == 'false'"])),
         target_container=container_name,
         composable_node_descriptions=[
             ComposableNode(
                 package="armor_detector_tensorrt",
                 plugin="rm_auto_aim::ArmorDetectorTensorrtNode",
                 name="armor_detector_tensorrt",
-                parameters=[
-                            {
-                                "use_sim_time": use_sim_time,
-                                "debug_mode": False,
-                                "target_color": 0,
-                                "use_sensor_data_qos": True,
-                                "detector": {
-                                    "camera_name": "camera",
-                                    "subscribe_compressed": False,
-                                    "model_path": "/home/nvidia/ros_ws/src/armor_detector_tensorrt-main/model/opt-1208-001.onnx",
-                                    "confidence_threshold": 0.25,
-                                    "top_k": 128,
-                                    "nms_threshold": 0.3,
-                                }
-                            }
-                        ],
+                parameters=[params_file_component, {"use_sim_time": use_sim_time},
+                                         {"detector.model_path": model_path}],
                 namespace=namespace,
             )
         ],
     )
-    detector_node=Node(
+    load_detector_node = Node(
+        condition=UnlessCondition(use_composition),
         package="armor_detector_tensorrt",
         executable="armor_detector_tensorrt_node",
         name="armor_detector_tensorrt",
-        parameters=[params_file_path, {"use_sim_time": use_sim_time}],
+        parameters=[params_file_node, {"use_sim_time": use_sim_time},
+                                 {"detector.model_path": model_path}],
         namespace=namespace,
     )
 
     ld = LaunchDescription()
     ld.add_action(declare_use_sim_time_cmd)
     ld.add_action(declare_namespace_cmd)
-    ld.add_action(declare_params_file_cmd)
+    ld.add_action(declare_params_file_node_cmd)
+    ld.add_action(declare_params_file_component_cmd)
     ld.add_action(declare_container_name_cmd)
     ld.add_action(declare_use_external_container_cmd)
+    ld.add_action(declare_model_path_cmd)
+    ld.add_action(declare_use_composition_cmd)
 
     ld.add_action(container_node)
-    ld.add_action(load_detector)
-    #ld.add_action(detector_node)
+    ld.add_action(load_detector_components)
+    ld.add_action(load_detector_node)
 
     return ld
