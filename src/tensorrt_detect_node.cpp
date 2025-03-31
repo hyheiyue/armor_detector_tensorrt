@@ -164,7 +164,7 @@ void ArmorDetectorTensorrtNode::imgCallback(const sensor_msgs::msg::Image::Const
 {
   auto cv_img = cv_bridge::toCvCopy(msg, "rgb8");
   frame_id_ = msg->header.frame_id;
-  RCLCPP_INFO(this->get_logger(), "Detected");
+  
   // 直接调用 detect() 进行推理
   const auto objs = detector_->detect(cv_img->image);
 
