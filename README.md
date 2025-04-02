@@ -9,4 +9,3 @@ armor_detector_tensorrt:
 的加载方式，issue https://github.com/ros2/launch_ros/issues/156 ,这里的解决方法独立了两种启动方法的yaml，以不同的形式描述
 
   
-* 然后就是使用rmw_qos_profile_default在我这边不能对topic回调，需要use_sensor_qos
